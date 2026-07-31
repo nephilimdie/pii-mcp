@@ -17,33 +17,36 @@ Use Cloudflare SSL mode **Full (strict)** after the origin certificate is active
 
 ## Install
 
-Run on the server as `deploy`:
+The preferred production entry point is the cloud repository. Run on the server
+as `deploy`:
+
+```bash
+cd /opt/your/path
+<your deploy command>
+```
+
+This clones the private repository on first use and delegates installation to
+`pii-mcp/deploy/install.sh`. `make deploy` without a target deploys cloud,
+engine and MCP in that order.
+
+For a standalone installation:
 
 ```bash
 cd /opt/your/path
 git clone git@github.com:nephilimdie/pii-mcp.git
 cd pii-mcp
-uv sync --frozen --no-dev
+./deploy/install.sh
 ```
 
-Install configuration and service:
+The installer creates `/etc/pseudora/pii-mcp.env` only when absent, renders the
+systemd unit with the actual checkout path, installs nginx only on first use,
+starts the service and verifies `127.0.0.1:8765/health`. Existing nginx and env
+files are preserved on updates so Certbot changes and local configuration remain
+intact.
+
+After the first installation, configure DNS and issue the certificate:
 
 ```bash
-sudo install -d -m 0750 -o root -g deploy /etc/pseudora
-sudo install -m 0640 -o root -g deploy .env.production.example /etc/pseudora/pii-mcp.env
-sudo install -m 0644 deploy/pseudora-mcp.service /etc/systemd/system/pseudora-mcp.service
-sudo install -m 0644 deploy/nginx-pii-mcp.conf /etc/nginx/sites-available/pseudora-mcp
-sudo ln -s /etc/nginx/sites-available/pseudora-mcp /etc/nginx/sites-enabled/pseudora-mcp
-```
-
-Review `/etc/pseudora/pii-mcp.env`, then start and verify:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now pseudora-mcp
-curl --fail http://127.0.0.1:8765/health
-sudo nginx -t
-sudo systemctl reload nginx
 sudo certbot --nginx -d mcp.pseudora.cloud
 ```
 
@@ -56,11 +59,8 @@ https://mcp.pseudora.cloud/mcp
 ## Update
 
 ```bash
-cd /opt/your/path/pii-mcp
-git pull --ff-only
-uv sync --frozen --no-dev
-sudo systemctl restart pseudora-mcp
-curl --fail http://127.0.0.1:8765/health
+cd /opt/your/path
+<your deploy command>
 ```
 
 ## Security notes
