@@ -21,6 +21,18 @@ require_command() {
     command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
 }
 
+find_uv() {
+    if command -v uv >/dev/null 2>&1; then
+        command -v uv
+        return
+    fi
+    if [ -x "$HOME/.local/bin/uv" ]; then
+        echo "$HOME/.local/bin/uv"
+        return
+    fi
+    die "uv is required. Install it from https://docs.astral.sh/uv/."
+}
+
 validate_absolute_path() {
     [[ "$2" =~ ^/[A-Za-z0-9._/-]+$ ]] || die "$1 must be a simple absolute path: $2"
 }
@@ -40,14 +52,15 @@ wait_for_health() {
     die "Timeout waiting for MCP health. Check: sudo journalctl -u $SERVICE_NAME -n 100"
 }
 
-for command in uv curl sed sudo systemctl; do
+for command in curl sed sudo systemctl; do
     require_command "$command"
 done
+UV_BIN="$(find_uv)"
 validate_absolute_path PII_MCP_PATH "$MCP_DIR"
 validate_absolute_path PII_MCP_ENV_FILE "$MCP_ENV_FILE"
 
 step "  install locked Python dependencies"
-uv sync --directory "$MCP_DIR" --frozen --no-dev
+"$UV_BIN" sync --directory "$MCP_DIR" --frozen --no-dev
 
 step "  install service configuration"
 sudo install -d -m 0750 -o root -g deploy "$(dirname "$MCP_ENV_FILE")"
