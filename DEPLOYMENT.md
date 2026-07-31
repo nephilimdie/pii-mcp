@@ -33,7 +33,7 @@ For a standalone installation:
 
 ```bash
 cd /opt/your/path
-git clone git@github.com:nephilimdie/pii-mcp.git
+git clone git@github-pii-mcp:nephilimdie/pii-mcp.git
 cd pii-mcp
 ./deploy/install.sh
 ```
@@ -72,3 +72,6 @@ cd /opt/your/path
   `MCP_AUTH_CACHE_TTL_SECONDS` (30 seconds by default).
 - Restrict repository access: deployment requires a GitHub deploy key or an
   authenticated machine user because this repository is private.
+- When another repository already uses a deploy key on the host, configure this
+  key under a dedicated `github-pii-mcp` SSH host alias. This prevents GitHub
+  from accepting the wrong repository-scoped key before clone authorization.
