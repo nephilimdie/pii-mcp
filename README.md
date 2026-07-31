@@ -1,106 +1,80 @@
-# pii-mcp
+# Pseudora MCP
 
-MCP (Model Context Protocol) server that exposes pii-protect as native tools
-for Claude Desktop, Cursor, and any MCP-compatible client.
+Model Context Protocol gateway that exposes Pseudora privacy controls as native
+AI tools. The remote service forwards every operation to `pseudora.cloud`; it
+does not contain the PII engine and does not store customer credentials.
 
-## Tools exposed
+## Tools
 
-| Tool | Description |
-|------|-------------|
-| `anonymize_text` | Anonymize PII, returns anonymized text + context_id |
-| `deanonymize_text` | Restore original using context_id |
-| `list_pii_types` | List all detectable PII types |
+| Tool | Purpose |
+| --- | --- |
+| `anonymize_text` | Replace personal data with tags or realistic surrogates |
+| `deanonymize_text` | Restore values using the original `context_id` |
+| `list_pii_types` | List entity types available to the current tenant |
+| `list_document_types` | List policies/document types available to the current tenant |
 
-## Connect it to your Pseudora account
+## Connect a client
 
-1. Sign in at [pseudora.cloud](https://pseudora.cloud) and open
-   **Cloud → Customer keys** (`/cloud/customer-keys`).
-2. Create a key. It is displayed **once** — copy it straight away.
-3. Point the server at the hosted API:
+1. Create a key in [Pseudora Customer keys](https://pseudora.cloud/cloud/customer-keys).
+2. Configure one remote MCP endpoint: `https://mcp.pseudora.cloud/mcp`.
+3. Send the key as `Authorization: Bearer pii_cust_...`.
 
-```bash
-pip install -r requirements.txt
-cp .env.example .env
+Generic remote configuration:
+
+```json
+{
+  "mcpServers": {
+    "pseudora": {
+      "url": "https://mcp.pseudora.cloud/mcp",
+      "headers": {
+        "Authorization": "Bearer pii_cust_replace_me"
+      }
+    }
+  }
+}
 ```
 
-```dotenv
-PII_API_URL=https://pseudora.cloud
-PII_API_KEY=pk_live_…
-```
+Use a key created for the team you want to work with. OAuth tokens can also pass
+`team_id` to individual tools; API keys remain bound to their tenant by Pseudora.
 
-The key travels as an `X-Api-Key` header. Your Pseudora plan decides the rate
-limit and the monthly credit pool, both shared with every other client on the
-same account — the browser extension, the VS Code extension and this server all
-draw from the same pool. A key belonging to an account with no active
-subscription is refused with `402 subscription_expired`.
+Do not commit the key to a project repository. Prefer the client credential store
+or environment-variable interpolation when the selected MCP client supports it.
 
-To run against a self-hosted engine instead, set `PII_API_URL` to your own
-instance (for example `http://localhost:15500`) and use a service or admin key.
+## Local stdio compatibility
 
-### One-shot setup
+For a client that does not support remote Streamable HTTP, clone this private
+repository and run:
 
 ```bash
 bash setup.sh
 ```
 
-It prompts for the key and registers the server with Claude Desktop.
-
-## Claude Desktop configuration
-
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Or configure it manually:
 
 ```json
 {
   "mcpServers": {
-    "pii-protect": {
-      "command": "python",
-      "args": ["/Users/you/Progetti/pii/pii-mcp/server.py"],
+    "pseudora": {
+      "command": "uv",
+      "args": ["run", "--project", "/absolute/path/to/pii-mcp", "pii-mcp"],
       "env": {
-        "PII_API_URL": "https://pseudora.cloud",
-        "PII_API_KEY": "your-customer-api-key"
+        "PSEUDORA_API_URL": "https://pseudora.cloud",
+        "PSEUDORA_API_KEY": "pii_cust_replace_me"
       }
     }
   }
 }
 ```
 
-Restart Claude Desktop. The tools appear automatically in the tool menu.
-
-## Cursor configuration
-
-Edit `.cursor/mcp.json` in your project (or global `~/.cursor/mcp.json`):
-
-```json
-{
-  "mcpServers": {
-    "pii-protect": {
-      "command": "python",
-      "args": ["/Users/you/Progetti/pii/pii-mcp/server.py"],
-      "env": {
-        "PII_API_URL": "https://pseudora.cloud",
-        "PII_API_KEY": "your-customer-api-key"
-      }
-    }
-  }
-}
-```
-
-## Without the mcp SDK
-
-`server.py` includes a pure JSON-RPC 2.0 fallback that works without the `mcp` package.
-The `mcp` SDK is optional but recommended for full protocol compatibility.
+## Development
 
 ```bash
-# With SDK (recommended)
-pip install mcp
-
-# Without SDK (fallback mode)
-pip install httpx python-dotenv
+uv sync --extra test
+uv run pytest
+uv run pii-mcp --transport streamable-http
 ```
 
-## Usage example (Claude Desktop)
+Health check: `http://127.0.0.1:8765/health`
+MCP endpoint: `http://127.0.0.1:8765/mcp`
 
-After connecting, ask Claude:
-> "Anonymize this text before I share it with you: Mario Rossi, CF RSSMRA80A01H501U, tel 333-1234567"
-
-Claude will call `anonymize_text` and work only with the anonymized version.
+Production instructions are in [DEPLOYMENT.md](DEPLOYMENT.md).

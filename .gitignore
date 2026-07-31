@@ -6,6 +6,8 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+.ruff_cache/
+.coverage
 
 # Virtualenv
 .venv/
@@ -13,3 +15,4 @@ venv/
 
 # Secrets — .env holds the Pseudora API key, never commit it
 .env
+.env.production

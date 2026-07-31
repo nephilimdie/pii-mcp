@@ -1,41 +1,41 @@
 #!/usr/bin/env bash
-# setup.sh — registers pii-mcp with Claude Desktop (requires uv)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+PSEUDORA_API_KEY="${PSEUDORA_API_KEY:-}"
 
-PII_API_URL="${PII_API_URL:-https://pseudora.cloud}"
-PII_API_KEY="${PII_API_KEY:-}"
-
-if [ -z "$PII_API_KEY" ]; then
-  echo "Create a key at ${PII_API_URL}/cloud/customer-keys (it is shown only once)."
-  read -rp "Pseudora API key: " PII_API_KEY
+if [ -z "$PSEUDORA_API_KEY" ]; then
+  echo "Create a key at https://pseudora.cloud/cloud/customer-keys (shown once)."
+  read -rsp "Pseudora API key: " PSEUDORA_API_KEY
+  echo
 fi
 
-if ! command -v uv &>/dev/null; then
-  echo "uv not found — install it: curl -LsSf https://astral.sh/uv/install.sh | sh"
+if ! command -v uv >/dev/null 2>&1; then
+  echo "uv is required: https://docs.astral.sh/uv/getting-started/installation/"
   exit 1
 fi
 
 mkdir -p "$(dirname "$CLAUDE_CONFIG")"
+export CLAUDE_CONFIG SCRIPT_DIR PSEUDORA_API_KEY
 
-python3 - <<PY
-import json, os
+python3 - <<'PY'
+import json
+import os
+from pathlib import Path
 
-path   = """$CLAUDE_CONFIG"""
-script = """$SCRIPT_DIR/server.py"""
-url    = """$PII_API_URL"""
-key    = """$PII_API_KEY"""
-
-cfg = json.loads(open(path).read()) if os.path.exists(path) else {}
-cfg.setdefault("mcpServers", {})["pii-protect"] = {
+path = Path(os.environ["CLAUDE_CONFIG"])
+config = json.loads(path.read_text()) if path.exists() else {}
+config.setdefault("mcpServers", {})["pseudora"] = {
     "command": "uv",
-    "args": ["run", "--with", "httpx", "--with", "python-dotenv", script],
-    "env": {"PII_API_URL": url, "PII_API_KEY": key}
+    "args": ["run", "--project", os.environ["SCRIPT_DIR"], "pii-mcp"],
+    "env": {
+        "PSEUDORA_API_URL": "https://pseudora.cloud",
+        "PSEUDORA_API_KEY": os.environ["PSEUDORA_API_KEY"],
+    },
 }
-open(path, "w").write(json.dumps(cfg, indent=2))
-print(f"Updated: {path}")
+path.write_text(json.dumps(config, indent=2) + "\n")
+print(f"Updated {path}")
 PY
 
-echo "Done — restart Claude Desktop to activate pii-mcp."
+echo "Restart Claude Desktop to load the Pseudora tools."
