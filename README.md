@@ -36,6 +36,8 @@ Generic remote configuration:
 
 Use a key created for the team you want to work with. OAuth tokens can also pass
 `team_id` to individual tools; API keys remain bound to their tenant by Pseudora.
+The managed gateway identifies its calls as `mcp_server`; requests and characters
+are visible by tool and key owner in [Cloud Stats](https://pseudora.cloud/cloud/stats).
 
 Do not commit the key to a project repository. Prefer the client credential store
 or environment-variable interpolation when the selected MCP client supports it.
