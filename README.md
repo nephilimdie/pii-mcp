@@ -15,6 +15,15 @@ does not contain the PII engine and does not store customer credentials.
 
 ## Connect a client
 
+### VS Code
+
+Install the Pseudora VS Code extension and run **Pseudora: Connect Account**.
+The extension completes OAuth PKCE in the browser, stores tokens in VS Code
+SecretStorage, lets the user select a team for each workspace, and registers this
+remote MCP endpoint automatically. No key is written to `mcp.json`.
+
+### Other MCP clients
+
 1. Create a key in [Pseudora Customer keys](https://pseudora.cloud/cloud/customer-keys).
 2. Configure one remote MCP endpoint: `https://mcp.pseudora.cloud/mcp`.
 3. Send the key as `Authorization: Bearer pii_cust_...`.
@@ -36,6 +45,9 @@ Generic remote configuration:
 
 Use a key created for the team you want to work with. OAuth tokens can also pass
 `team_id` to individual tools; API keys remain bound to their tenant by Pseudora.
+Clients with a team picker should send `X-Team-ID` on the MCP connection. That
+client-selected team takes precedence over tool arguments, so an AI model cannot
+silently switch away from the workspace team.
 The managed gateway identifies its calls as `mcp_server`; requests and characters
 are visible by tool and key owner in [Cloud Stats](https://pseudora.cloud/cloud/stats).
 

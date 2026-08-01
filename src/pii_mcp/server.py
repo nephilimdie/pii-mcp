@@ -4,12 +4,12 @@ import uuid
 
 from mcp.server.auth.middleware.auth_context import get_access_token
 from mcp.server.auth.settings import AuthSettings
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
 from .api import AuthMethod, PseudoraApi
 from .settings import Settings
-from .token_verifier import PseudoraTokenVerifier
+from .token_verifier import MCP_SCOPES, PseudoraTokenVerifier
 
 
 def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
@@ -23,7 +23,7 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
             issuer_url=settings.api_url,
             resource_server_url=settings.public_url,
             service_documentation_url=f"{settings.api_url}/extensions",
-            required_scopes=[],
+            required_scopes=MCP_SCOPES,
         )
 
     mcp = FastMCP(
@@ -55,12 +55,21 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
             return settings.api_key, "api_key"
         raise RuntimeError("PSEUDORA_API_KEY is required when using stdio transport")
 
-    def selected_team(team_id: str | None) -> str | None:
-        return team_id or settings.default_team_id
+    def selected_team(ctx: Context, team_id: str | None) -> str | None:
+        try:
+            request = ctx.request_context.request
+        except ValueError:
+            return team_id or settings.default_team_id
+
+        headers = getattr(request, "headers", None)
+        header_team = headers.get("x-team-id", "").strip() if headers else ""
+
+        return header_team or team_id or settings.default_team_id
 
     @mcp.tool()
     async def anonymize_text(
         text: str,
+        ctx: Context,
         language: str = "it",
         mode: str = "tag",
         document_type: str = "generic",
@@ -82,7 +91,7 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
             language=language,
             mode=mode,
             context_type=document_type,
-            team_id=selected_team(team_id),
+            team_id=selected_team(ctx, team_id),
         )
         result["context_id"] = resolved_context_id
         return result
@@ -91,6 +100,7 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
     async def deanonymize_text(
         text: str,
         context_id: str,
+        ctx: Context,
         document_type: str = "generic",
         team_id: str | None = None,
     ) -> dict:
@@ -102,21 +112,25 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
             text=text,
             context_id=context_id,
             context_type=document_type,
-            team_id=selected_team(team_id),
+            team_id=selected_team(ctx, team_id),
         )
 
     @mcp.tool()
-    async def list_pii_types(team_id: str | None = None) -> object:
+    async def list_pii_types(ctx: Context, team_id: str | None = None) -> object:
         """List the personal-data entity types enabled for the selected team."""
         token, auth_method = credentials()
-        return await pseudora.list_pii_types(token, auth_method, selected_team(team_id))
+        return await pseudora.list_pii_types(
+            token, auth_method, selected_team(ctx, team_id)
+        )
 
     @mcp.tool()
-    async def list_document_types(team_id: str | None = None) -> object:
+    async def list_document_types(
+        ctx: Context, team_id: str | None = None
+    ) -> object:
         """List document types and policies available to the selected team."""
         token, auth_method = credentials()
         return await pseudora.list_document_types(
-            token, auth_method, selected_team(team_id)
+            token, auth_method, selected_team(ctx, team_id)
         )
 
     return mcp

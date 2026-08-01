@@ -22,11 +22,17 @@ async def test_authenticated_streamable_http_round_trip() -> None:
                     "id": 42,
                     "tenant_id": "acme",
                     "auth_method": "oauth",
-                    "scopes": ["anonymize", "deanonymize", "profile:read"],
+                    "scopes": [
+                        "anonymize",
+                        "deanonymize",
+                        "profile:read",
+                        "settings:read",
+                    ],
                 },
             )
         if request.url.path == "/v1/anonymize":
             assert request.headers["x-pii-client"] == "mcp_server"
+            assert request.headers["x-team-id"] == "team-from-vscode"
             return httpx.Response(200, json={"anonymized_text": "[PERSON_1]"})
         return httpx.Response(404)
 
@@ -43,6 +49,7 @@ async def test_authenticated_streamable_http_round_trip() -> None:
     app = create_http_app(settings, api=api)
     headers = {
         "Authorization": "Bearer oauth-token",
+        "X-Team-ID": "team-from-vscode",
         "Accept": "application/json, text/event-stream",
     }
 
@@ -91,7 +98,10 @@ async def test_authenticated_streamable_http_round_trip() -> None:
                 "method": "tools/call",
                 "params": {
                     "name": "anonymize_text",
-                    "arguments": {"text": "Mario Rossi"},
+                    "arguments": {
+                        "text": "Mario Rossi",
+                        "team_id": "model-must-not-override-client",
+                    },
                 },
             },
         )

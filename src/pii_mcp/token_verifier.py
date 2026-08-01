@@ -8,6 +8,8 @@ from mcp.server.auth.provider import AccessToken, TokenVerifier
 
 from .api import PseudoraApi
 
+MCP_SCOPES = ["anonymize", "deanonymize", "profile:read", "settings:read"]
+
 
 class PseudoraTokenVerifier(TokenVerifier):
     def __init__(self, api: PseudoraApi, cache_ttl_seconds: int = 30) -> None:
@@ -37,11 +39,11 @@ class PseudoraTokenVerifier(TokenVerifier):
                 return None
 
             profile, auth_method = authenticated
-            scopes = profile.get("scopes") or [
-                "anonymize",
-                "deanonymize",
-                "profile:read",
-            ]
+            scopes = (
+                MCP_SCOPES
+                if auth_method == "api_key"
+                else list(profile.get("scopes") or [])
+            )
             access_token = AccessToken(
                 token=token,
                 client_id=f"pseudora-{auth_method}",
