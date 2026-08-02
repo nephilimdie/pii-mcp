@@ -55,16 +55,28 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
             return settings.api_key, "api_key"
         raise RuntimeError("PSEUDORA_API_KEY is required when using stdio transport")
 
-    def selected_team(ctx: Context, team_id: str | None) -> str | None:
+    def request_header(ctx: Context, name: str) -> str:
         try:
             request = ctx.request_context.request
         except ValueError:
-            return team_id or settings.default_team_id
+            return ""
 
         headers = getattr(request, "headers", None)
-        header_team = headers.get("x-team-id", "").strip() if headers else ""
+        return headers.get(name, "").strip() if headers else ""
 
-        return header_team or team_id or settings.default_team_id
+    def selected_team(ctx: Context, team_id: str | None) -> str | None:
+        return (
+            request_header(ctx, "x-team-id")
+            or team_id
+            or settings.default_team_id
+        )
+
+    def selected_document_type(ctx: Context, document_type: str) -> str:
+        return request_header(ctx, "x-pii-document-type") or document_type
+
+    def selected_mode(ctx: Context, mode: str) -> str:
+        client_mode = request_header(ctx, "x-pii-mode")
+        return client_mode if client_mode in {"tag", "surrogate"} else mode
 
     @mcp.tool()
     async def anonymize_text(
@@ -89,8 +101,8 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
             text=text,
             context_id=resolved_context_id,
             language=language,
-            mode=mode,
-            context_type=document_type,
+            mode=selected_mode(ctx, mode),
+            context_type=selected_document_type(ctx, document_type),
             team_id=selected_team(ctx, team_id),
         )
         result["context_id"] = resolved_context_id
@@ -111,7 +123,7 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
             auth_method,
             text=text,
             context_id=context_id,
-            context_type=document_type,
+            context_type=selected_document_type(ctx, document_type),
             team_id=selected_team(ctx, team_id),
         )
 
