@@ -29,8 +29,10 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
     mcp = FastMCP(
         "Pseudora",
         instructions=(
-            "Use these tools to remove personal data before sending text to an AI. "
-            "Keep the returned context_id when the original values may need restoring."
+            "Use these tools to protect data produced or fetched during agent workflows "
+            "before forwarding it to external systems. Keep the returned context_id when "
+            "the original values may need restoring. MCP tools do not intercept a user "
+            "prompt that the host model has already received."
         ),
         host=settings.host,
         port=settings.port,
@@ -88,7 +90,7 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
         context_id: str | None = None,
         team_id: str | None = None,
     ) -> dict:
-        """Anonymize personal data before sharing text with an AI.
+        """Anonymize personal data handled during an agent workflow.
 
         Keep context_id to preserve mappings across calls or restore original values.
         mode can be 'tag' or 'surrogate'. document_type selects a Pseudora policy.

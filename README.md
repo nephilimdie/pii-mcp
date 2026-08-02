@@ -4,6 +4,12 @@ Model Context Protocol gateway that exposes Pseudora privacy controls as native
 AI tools. The remote service forwards every operation to `pseudora.cloud`; it
 does not contain the PII engine and does not store customer credentials.
 
+MCP tools are selected and invoked by the host model during an agent request.
+They can protect data fetched or produced inside a workflow, but they cannot
+intercept a raw user prompt that the model already received. In VS Code, use the
+Pseudora extension's `@pseudora` chat participant when the prompt itself contains
+personal data: it anonymizes before invoking the selected language model.
+
 ## Tools
 
 | Tool | Purpose |
@@ -23,6 +29,9 @@ SecretStorage, lets the user select a team, document type, and anonymization mod
 for each workspace, and registers this remote MCP endpoint automatically. Pausing
 Pseudora in the workspace also removes the MCP server. No key is written to
 `mcp.json`.
+
+For protected prompts, open Chat and start the request with `@pseudora`. Enabling
+the MCP server alone does not provide transparent prompt interception.
 
 ### Other MCP clients
 
