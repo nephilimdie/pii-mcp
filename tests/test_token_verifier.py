@@ -21,7 +21,7 @@ async def test_verified_tokens_are_cached_without_storing_plaintext() -> None:
 
     assert first is second
     assert first is not None
-    assert first.claims["auth_method"] == "api_key"
+    assert first.client_id == "pseudora-api_key"
     api.authenticate.assert_awaited_once_with("secret-token")
     assert "secret-token" not in verifier._cache
 

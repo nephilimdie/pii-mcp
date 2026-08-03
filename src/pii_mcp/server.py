@@ -51,7 +51,7 @@ def create_mcp(settings: Settings, api: PseudoraApi | None = None) -> FastMCP:
     def credentials() -> tuple[str, AuthMethod]:
         access_token = get_access_token()
         if access_token:
-            method = (access_token.claims or {}).get("auth_method", "oauth")
+            method = access_token.client_id.removeprefix("pseudora-")
             return access_token.token, "api_key" if method == "api_key" else "oauth"
         if settings.api_key:
             return settings.api_key, "api_key"

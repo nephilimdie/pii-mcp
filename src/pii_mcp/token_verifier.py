@@ -48,11 +48,6 @@ class PseudoraTokenVerifier(TokenVerifier):
                 token=token,
                 client_id=f"pseudora-{auth_method}",
                 scopes=list(scopes),
-                subject=str(profile.get("id", "unknown")),
-                claims={
-                    "auth_method": auth_method,
-                    "tenant_id": profile.get("tenant_id"),
-                },
             )
             if self._cache_ttl_seconds > 0:
                 self._cache[cache_key] = (
