@@ -36,7 +36,7 @@ async def test_authenticated_streamable_http_round_trip() -> None:
             payload = json.loads(request.content)
             assert payload["context_type"] == "fine_appeal"
             assert payload["mode"] == "surrogate"
-            return httpx.Response(200, json={"anonymized_text": "[PERSON_1]"})
+            return httpx.Response(200, json={"safe": True, "anonymized_text": "[PERSON_1]"})
         return httpx.Response(404)
 
     settings = replace(

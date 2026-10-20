@@ -50,7 +50,7 @@ class PseudoraApi:
         context_type: str,
         team_id: str | None,
     ) -> dict[str, Any]:
-        return await self._request(
+        result = await self._request(
             "POST",
             "/v1/anonymize",
             token,
@@ -64,6 +64,13 @@ class PseudoraApi:
                 "mode": mode,
             },
         )
+        if (
+            not isinstance(result, dict)
+            or result.get("safe") is not True
+            or not isinstance(result.get("anonymized_text"), str)
+        ):
+            raise RuntimeError("Pseudora could not confirm safe processing.")
+        return result
 
     async def deanonymize(
         self,

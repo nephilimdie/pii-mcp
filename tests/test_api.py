@@ -1,9 +1,28 @@
 from __future__ import annotations
 
+import json
 import httpx
 import pytest
 
 from pii_mcp.api import PseudoraApi
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("body", [
+    None, {}, {"safe": False, "anonymized_text": "private"},
+    {"anonymized_text": "private"}, {"safe": "true", "anonymized_text": "private"},
+    {"safe": True, "anonymized_text": 123},
+])
+async def test_unsafe_results_are_not_exposed_as_tool_output(body) -> None:
+    api = PseudoraApi("https://example.test", transport=httpx.MockTransport(
+        lambda request: httpx.Response(200, content=json.dumps(body))
+    ))
+    try:
+        with pytest.raises(RuntimeError, match="could not confirm safe processing"):
+            await api.anonymize("key", "api_key", text="private", context_id="ctx",
+                                language="it", mode="tag", context_type="generic", team_id=None)
+    finally:
+        await api.close()
 
 
 @pytest.mark.asyncio
@@ -19,7 +38,7 @@ async def test_api_key_authentication_falls_back_and_is_forwarded() -> None:
                 200,
                 json={"id": 7, "auth_method": "api_key", "tenant_id": "acme"},
             )
-        return httpx.Response(200, json={"anonymized_text": "[PERSON_1]"})
+        return httpx.Response(200, json={"safe": True, "anonymized_text": "[PERSON_1]"})
 
     api = PseudoraApi("https://example.test", transport=httpx.MockTransport(handler))
     try:
