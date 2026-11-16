@@ -1,7 +1,8 @@
 # Pseudora MCP
 
-Model Context Protocol gateway that exposes Pseudora privacy controls as native
-AI tools. The remote service forwards every operation to `pseudora.cloud`; it
+Model Context Protocol gateway that exposes [Pseudora](https://pseudora.cloud)
+privacy controls (PII detection, anonymization and reversible pseudonymization)
+as native AI tools. The remote service forwards every operation to `pseudora.cloud`; it
 does not contain the PII engine and does not store customer credentials.
 
 MCP tools are selected and invoked by the host model during an agent request.
@@ -69,8 +70,8 @@ or environment-variable interpolation when the selected MCP client supports it.
 
 ## Local stdio compatibility
 
-For a client that does not support remote Streamable HTTP, clone this private
-repository and run:
+For a client that does not support remote Streamable HTTP, clone this repository
+and run:
 
 ```bash
 bash setup.sh
@@ -104,4 +105,9 @@ uv run pii-mcp --transport streamable-http
 Health check: `http://127.0.0.1:8765/health`
 MCP endpoint: `http://127.0.0.1:8765/mcp`
 
-Production instructions are in [DEPLOYMENT.md](DEPLOYMENT.md).
+Self-hosting instructions are in [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE). Pseudora Cloud and the Pseudora name
+are not covered by this license.

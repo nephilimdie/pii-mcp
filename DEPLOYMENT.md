@@ -5,35 +5,21 @@ or PII engine. Every request is authenticated with the caller's Pseudora token
 and forwarded to `pseudora.cloud`, where tenant isolation, ACLs, quotas, audit
 events, and billing remain authoritative.
 
+The managed instance is already available at `https://mcp.pseudora.cloud/mcp`.
+These instructions are for operators who run their own gateway.
+
 ## DNS
 
-Create a proxied Cloudflare `A` record:
-
-```text
-<your-subdomain> -> <your-origin-ip>
-```
-
-Use Cloudflare SSL mode **Full (strict)** after the origin certificate is active.
+Point your gateway hostname at the server (for example a proxied Cloudflare `A`
+record) and use SSL mode **Full (strict)** once the origin certificate is active.
+Set `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS` to that hostname.
 
 ## Install
 
-The preferred production entry point is the cloud repository. Run on the server
-as `deploy`:
+Run on the server as an unprivileged deploy user:
 
 ```bash
-cd /opt/your/path
-<your deploy command>
-```
-
-This clones the private repository on first use and delegates installation to
-`pii-mcp/deploy/install.sh`. `make deploy` without a target deploys cloud,
-engine and MCP in that order.
-
-For a standalone installation:
-
-```bash
-cd /opt/your/path
-git clone git@github-pii-mcp:nephilimdie/pii-mcp.git
+git clone https://github.com/nephilimdie/pii-mcp.git
 cd pii-mcp
 ./deploy/install.sh
 ```
@@ -47,20 +33,15 @@ intact.
 After the first installation, configure DNS and issue the certificate:
 
 ```bash
-sudo certbot --nginx -d mcp.pseudora.cloud
-```
-
-The public MCP endpoint is:
-
-```text
-https://mcp.pseudora.cloud/mcp
+sudo certbot --nginx -d <your-gateway-hostname>
 ```
 
 ## Update
 
 ```bash
-cd /opt/your/path
-<your deploy command>
+cd pii-mcp
+git pull
+./deploy/install.sh
 ```
 
 ## Security notes
@@ -70,8 +51,3 @@ cd /opt/your/path
 - Customer credentials are accepted as Bearer tokens and are never logged or stored.
 - Token verification is cached briefly by SHA-256 digest; revocation propagates after
   `MCP_AUTH_CACHE_TTL_SECONDS` (30 seconds by default).
-- Restrict repository access: deployment requires a GitHub deploy key or an
-  authenticated machine user because this repository is private.
-- When another repository already uses a deploy key on the host, configure this
-  key under a dedicated `github-pii-mcp` SSH host alias. This prevents GitHub
-  from accepting the wrong repository-scoped key before clone authorization.
